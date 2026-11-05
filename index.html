@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f8f7f3" />
+  <meta name="description" content="Read the Holy Quran in Arabic with English translation and find daily prayer times." />
+  <title>Noor — Quran & Prayer Times</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    .arabic { font-family: 'Amiri', serif; }
+    .ayah-card { transition: background .2s ease; }
+    .ayah-card:hover { background: #faf9f6; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { scrollbar-width: none; }
+    select, input { outline: none; }
+    .loading { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 50% { opacity: .45; } }
+
+    .nav-clock {
+    font-family: inherit; /* Keeps your website's beautiful font */
+    font-size: 25px;
+    font-weight: 500;
+    color: #fff; 
+    padding: 10px;
+    border-radius: 10px;
+    background: #234b3c; 
+    margin-left: auto; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* THE MAGIC FIX: Locks each number into an unmovable slot */
+.nav-clock .digit {
+    display: inline-block;
+    width: 16px; /* Adjust this width slightly if your font digits overlap or gap */
+    text-align: center;
+}
+
+  </style>
+</head>
+
+<body class="bg-[#f8f7f3] text-[#252a25] min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-[#f8f7f3]/95 backdrop-blur border-b border-[#e8e6df]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-[#234b3c] text-white flex items-center justify-center text-xl">☪</div>
+        <div>
+          <div class="font-bold text-xl tracking-tight">Noor</div>
+          <div class="text-[10px] uppercase tracking-[.2em] text-gray-500">Quran & Prayer</div>
+        </div>
+      </a>
+    <nav class="hidden sm:flex gap-7 font-medium text-gray-600 items-center">
+        <a href="#reader" class="hover:text-[#234b3c] font-semibold">Read Quran</a>
+        <a href="#prayers" class="hover:text-[#234b3c] font-semibold">Prayer Times</a>
+        <div class="nav-clock" id="liveClock"></div>
+    </nav>
+
+      <button id="mobileMenuBtn" class="sm:hidden text-2xl" aria-label="Open navigation">☰</button>
+    </div>
+    <div id="mobileMenu" class="hidden sm:hidden px-5 pb-4 text-sm">
+      <a href="#reader" class="block py-2">Read Quran</a>
+      <a href="#prayers" class="block py-2">Prayer Times</a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+
+    <!-- Welcome -->
+    <section class="rounded-3xl bg-[#234b3c] text-white p-6 sm:p-10 mb-8 relative overflow-hidden">
+      <div class="absolute -right-12 -top-16 w-64 h-64 rounded-full border border-white/10"></div>
+      <div class="absolute -right-4 -top-8 w-48 h-48 rounded-full border border-white/10"></div>
+      <div class="relative max-w-2xl">
+        <p class="text-5xl text-[#c9d8c9] mb-3">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <h1 class="text-3xl sm:text-5xl font-semibold leading-tight">A moment of peace.<br> A lifetime of guidance.</h1>
+        <p class="text-[#d5e1d8] mt-4 max-w-lg leading-relaxed">Read the Holy Quran, reflect on its meaning, and stay connected to your daily prayers.</p>
+        <a href="#reader" class="inline-flex mt-6 px-5 py-3 rounded-xl bg-white text-[#234b3c] font-semibold text-sm hover:bg-[#edf2ed] transition">Begin reading <span class="ml-2">→</span></a>
+      </div>
+    </section>
+
+    <!-- Prayer times -->
+    <section id="prayers" class="mb-12">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-5">
+        <div>
+          <p class="text-xs uppercase tracking-[.2em] text-[#718174] font-semibold">Your daily connection</p>
+          <h2 class="text-2xl font-semibold mt-1">Prayer times</h2>
+          <p id="prayerDate" class="text-sm text-gray-500 mt-1">Loading date...</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <input id="cityInput" value="Dubai" placeholder="City" class="w-32 sm:w-40 bg-white border border-[#e4e2da] rounded-xl px-3 py-2 text-sm">
+          <input id="countryInput" value="United Arab Emirates" placeholder="Country" class="w-40 sm:w-48 bg-white border border-[#e4e2da] rounded-xl px-3 py-2 text-sm">
+          <button id="locationBtn" class="px-4 py-2 rounded-xl bg-[#234b3c] text-white text-sm font-medium hover:bg-[#183b2e]">Update</button>
+        </div>
+      </div>
+
+      <div id="prayerStatus" class="text-sm text-gray-500 mb-3" aria-live="polite"></div>
+      <div id="prayerGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="loading h-28 rounded-2xl bg-[#eae8e1]"></div>
+        <div class="loading h-28 rounded-2xl bg-[#eae8e1]"></div>
+        <div class="loading h-28 rounded-2xl bg-[#eae8e1]"></div>
+        <div class="loading h-28 rounded-2xl bg-[#eae8e1]"></div>
+        <div class="loading h-28 rounded-2xl bg-[#eae8e1]"></div>
+        <div class="loading h-28 rounded-2xl bg-[#eae8e1]"></div>
+      </div>
+      <p class="text-xs text-gray-400 mt-3">Prayer times are calculated using the selected city and calculation method. Local mosque timetables may differ.</p>
+    </section>
+
+    <!-- Quran reader -->
+    <section id="reader">
+      <div class="mb-6">
+        <p class="text-xs uppercase tracking-[.2em] text-[#718174] font-semibold">The Holy Quran</p>
+        <h2 class="text-2xl sm:text-3xl font-semibold mt-1">Read & reflect</h2>
+      </div>
+
+      <div class="bg-white border border-[#e8e6df] rounded-2xl p-4 sm:p-5 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label for="viewMode" class="block text-xs text-gray-500 mb-1.5">Browse by</label>
+            <select id="viewMode" class="w-full bg-[#f8f7f3] border border-[#e8e6df] rounded-xl px-3 py-3 text-sm">
+              <option value="surah">Surah</option>
+              <option value="juz">Para / Juz</option>
+            </select>
+          </div>
+
+          <div id="surahControl">
+            <label for="surahSelect" class="block text-xs text-gray-500 mb-1.5">Select Surah</label>
+            <select id="surahSelect" class="w-full bg-[#f8f7f3] border border-[#e8e6df] rounded-xl px-3 py-3 text-sm">
+              <option>Loading surahs...</option>
+            </select>
+          </div>
+
+          <div id="juzControl" class="hidden">
+            <label for="juzSelect" class="block text-xs text-gray-500 mb-1.5">Select Para / Juz</label>
+            <select id="juzSelect" class="w-full bg-[#f8f7f3] border border-[#e8e6df] rounded-xl px-3 py-3 text-sm">
+              <option value="1">Juz 1</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="ayahJump" class="block text-xs text-gray-500 mb-1.5">Jump to Ayah</label>
+            <div class="flex gap-2">
+              <input id="ayahJump" type="number" min="1" placeholder="Ayah number" class="min-w-0 w-full bg-[#f8f7f3] border border-[#e8e6df] rounded-xl px-3 py-3 text-sm">
+              <button id="jumpBtn" class="px-4 rounded-xl bg-[#234b3c] text-white text-sm">Go</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label for="searchInput" class="block text-xs text-gray-500 mb-1.5">Search English translation</label>
+          <div class="flex gap-2">
+            <input id="searchInput" placeholder="Search words in the Quran..." class="min-w-0 flex-1 bg-[#f8f7f3] border border-[#e8e6df] rounded-xl px-3 py-3 text-sm">
+            <button id="searchBtn" class="px-5 rounded-xl bg-[#234b3c] text-white text-sm font-medium">Search</button>
+            <button id="clearSearchBtn" class="px-4 rounded-xl border border-[#e8e6df] text-sm">Clear</button>
+          </div>
+          <p class="text-xs text-gray-400 mt-2">Search within the currently loaded surah or juz.</p>
+        </div>
+
+        <!-- Download Section -->
+        <div class="mt-5 pt-5 border-t border-[#e8e6df]">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span class="block text-sm font-semibold text-[#252a25]">Complete Holy Quran (PDF)</span>
+              <span class="text-xs text-gray-500">Includes Arabic text and English translation (Sahih International).</span>
+            </div>
+            <a href="./assets/Holy-Quran-English.pdf" target="_blank" rel="noopener noreferrer" download class="px-6 py-3.5 rounded-2xl bg-[#234b3c] text-white font-medium text-sm hover:bg-[#183b2e] transition shadow-md flex items-center justify-center gap-2">
+             Download Full Quran PDF
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div id="surahHeading" class="bg-[#eaece5] rounded-2xl p-6 sm:p-8 text-center mb-5">
+        <p id="surahMeta" class="text-xs uppercase tracking-[.18em] text-[#667568]">Loading...</p>
+        <h3 id="surahName" class="arabic text-4xl sm:text-5xl text-[#234b3c] mt-3">الْقُرْآنُ الْكَرِيمُ</h3>
+        <p id="surahEnglish" class="text-sm text-gray-600 mt-2">The Noble Quran</p>
+        <p id="bismillah" class="arabic text-2xl mt-5">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+      </div>
+
+      <div id="quranStatus" class="text-sm text-gray-500 mb-4" aria-live="polite"></div>
+      <div id="ayahList" class="space-y-3">
+        <div class="loading h-48 rounded-2xl bg-[#eae8e1]"></div>
+      </div>
+
+      <div class="flex justify-center gap-3 mt-8">
+        <button id="prevBtn" class="px-5 py-3 rounded-xl border border-[#deddd5] bg-white text-sm font-medium">← Previous</button>
+        <button id="nextBtn" class="px-5 py-3 rounded-xl bg-[#234b3c] text-white text-sm font-medium">Next →</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-[#e8e6df] mt-16 py-8 text-center text-sm text-gray-500">
+    <p class="font-semibold text-[#234b3c]">Noor</p>
+    <p class="mt-1">May the Quran bring peace to your heart.</p>
+    <p class="text-xs mt-3">Quran text & translations: AlQuran Cloud API · Prayer times: AlAdhan API</p>
+  </footer>
+
+<script>
+const QURAN_API = "https://api.alquran.cloud/v1";
+const PRAYER_API = "https://api.aladhan.com/v1";
+
+const $ = id => document.getElementById(id);
+
+let surahs = [];
+let currentMode = "surah";
+let currentSurah = 1;
+let currentJuz = 1;
+let currentAyahs = [];
+let filteredAyahs = [];
+let currentPage = 0;
+const PAGE_SIZE = 30;
+
+const prayerNames = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+async function fetchJSON(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Request failed (${response.status})`);
+  const json = await response.json();
+  if (json.code && json.code !== 200) throw new Error(json.status || "API error");
+  return json;
+}
+
+function formatArabicNumber(number) {
+  return Number(number).toLocaleString("ar-EG");
+}
+
+function getAyahMeta(ayah) {
+  return ayah.meta || {};
+}
+
+function getAyahText(ayah, editionIndex) {
+  return ayah.editions?.[editionIndex]?.text || "";
+}
+
+function getAyahNumber(ayah) {
+  return ayah.numberInSurah || ayah.number || "";
+}
+
+function renderAyah(ayah) {
+  const arabic = getAyahText(ayah, 0);
+  const english = getAyahText(ayah, 1);
+  const number = getAyahNumber(ayah);
+  const globalNumber = ayah.number || "";
+  const meta = getAyahMeta(ayah);
+  const juz = meta.juz || ayah.juz || "";
+
+  return `
+    <article id="ayah-${number}" class="ayah-card bg-white border border-[#e8e6df] rounded-2xl p-5 sm:p-7">
+      <div class="flex items-center justify-between gap-3 mb-5">
+        <div class="flex items-center gap-2">
+          <span class="w-9 h-9 rounded-full bg-[#eaf0e9] text-[#234b3c] flex items-center justify-center text-xs font-semibold">${escapeHTML(number)}</span>
+          <span class="text-xs text-gray-400">Ayah ${escapeHTML(number)}</span>
+        </div>
+        <span class="text-xs text-gray-400">${juz ? `Juz ${escapeHTML(juz)}` : ""}</span>
+      </div>
+      <p dir="rtl" lang="ar" class="arabic text-right text-3xl sm:text-4xl leading-[2.1] text-[#263b30]">${escapeHTML(arabic)}</p>
+      <div class="border-t border-[#efeee9] mt-6 pt-5">
+        <p class="text-xs uppercase tracking-wider text-gray-400 mb-2">English translation</p>
+        <p class="text-[15px] sm:text-base leading-8 text-gray-700">${escapeHTML(english)}</p>
+      </div>
+      <div class="mt-4 text-xs text-gray-400">${globalNumber ? `Quran ${escapeHTML(globalNumber)}` : ""}</div>
+    </article>`;
+}
+
+function renderAyahs() {
+  const list = $("ayahList");
+  const start = currentPage * PAGE_SIZE;
+  const pageAyahs = filteredAyahs.slice(start, start + PAGE_SIZE);
+
+  if (!pageAyahs.length) {
+    list.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center text-gray-500">No ayahs found.</div>`;
+    $("quranStatus").textContent = "";
+    return;
+  }
+
+  list.innerHTML = pageAyahs.map(renderAyah).join("");
+  $("quranStatus").textContent =
+    `Showing ${start + 1}–${Math.min(start + PAGE_SIZE, filteredAyahs.length)} of ${filteredAyahs.length} ayahs`;
+
+  $("prevBtn").disabled = currentPage === 0;
+  $("nextBtn").disabled = start + PAGE_SIZE >= filteredAyahs.length;
+  $("prevBtn").classList.toggle("opacity-40", currentPage === 0);
+  $("nextBtn").classList.toggle("opacity-40", start + PAGE_SIZE >= filteredAyahs.length);
+}
+
+async function loadSurahs() {
+  $("quranStatus").textContent = "Loading surahs...";
+  try {
+    const result = await fetchJSON(`${QURAN_API}/surah`);
+    surahs = result.data;
+
+    $("surahSelect").innerHTML = surahs.map(s =>
+      `<option value="${s.number}">${s.number}. ${escapeHTML(s.englishName)} — ${escapeHTML(s.name)}</option>`
+    ).join("");
+
+    $("juzSelect").innerHTML = Array.from({length: 30}, (_, i) =>
+      `<option value="${i + 1}">Juz ${i + 1}</option>`
+    ).join("");
+
+    await loadCurrentSelection();
+  } catch (error) {
+    $("quranStatus").textContent = "Unable to load Quran data. Please check your internet connection and try again.";
+    console.error(error);
+  }
+}
+
+async function loadCurrentSelection() {
+  $("ayahList").innerHTML = `<div class="loading h-48 rounded-2xl bg-[#eae8e1]"></div>`;
+  $("quranStatus").textContent = "Loading Quran...";
+
+  try {
+    let result;
+    if (currentMode === "surah") {
+      result = await fetchJSON(`${QURAN_API}/surah/${currentSurah}/editions/quran-uthmani,en.sahih`);
+      const arabicAyahs = result.data[0].ayahs;
+      const englishAyahs = result.data[1].ayahs;
+
+      currentAyahs = arabicAyahs.map((ayah, i) => ({
+        ...ayah,
+        editions: [result.data[0].ayahs[i], result.data[1].ayahs[i]],
+        meta: { juz: ayah.juz }
+      }));
+
+      const surah = result.data[0];
+      $("surahName").textContent = surah.name;
+      $("surahEnglish").textContent = `${surah.englishName} — ${surah.englishNameTranslation}`;
+      $("surahMeta").textContent = `${surah.numberOfAyahs} Ayahs · ${surah.revelationType}`;
+      $("bismillah").style.display = currentSurah === 1 || currentSurah === 9 ? "none" : "block";
+    } else {
+      result = await fetchJSON(`${QURAN_API}/juz/${currentJuz}/editions/quran-uthmani,en.sahih`);
+      const arabicAyahs = result.data[0].ayahs;
+      const englishAyahs = result.data[1].ayahs;
+
+      currentAyahs = arabicAyahs.map((ayah, i) => ({
+        ...ayah,
+        editions: [arabicAyahs[i], englishAyahs[i]],
+        meta: { juz: currentJuz }
+      }));
+
+      $("surahName").textContent = `الجزء ${formatArabicNumber(currentJuz)}`;
+      $("surahEnglish").textContent = `Juz ${currentJuz} — Para ${currentJuz}`;
+      $("surahMeta").textContent = `${currentAyahs.length} Ayahs`;
+      $("bismillah").style.display = "none";
+    }
+
+    filteredAyahs = [...currentAyahs];
+    currentPage = 0;
+    renderAyahs();
+  } catch (error) {
+    $("quranStatus").textContent = "Unable to load this selection. Please try again.";
+    $("ayahList").innerHTML = "";
+    console.error(error);
+  }
+}
+
+function applySearch() {
+  const query = $("searchInput").value.trim().toLowerCase();
+  filteredAyahs = query
+    ? currentAyahs.filter(ayah => getAyahText(ayah, 1).toLowerCase().includes(query))
+    : [...currentAyahs];
+  currentPage = 0;
+  renderAyahs();
+}
+
+function jumpToAyah() {
+  const number = Number($("ayahJump").value);
+  if (!number || number < 1) return;
+
+  const index = filteredAyahs.findIndex(ayah => Number(getAyahNumber(ayah)) === number);
+  if (index === -1) {
+    $("quranStatus").textContent = "That ayah is not in the current selection.";
+    return;
+  }
+
+  currentPage = Math.floor(index / PAGE_SIZE);
+  renderAyahs();
+  setTimeout(() => {
+    document.getElementById(`ayah-${number}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 50);
+}
+
+function getTodayDate() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${day}-${month}-${now.getFullYear()}`;
+}
+
+async function loadPrayerTimes() {
+  const city = $("cityInput").value.trim();
+  const country = $("countryInput").value.trim();
+
+  if (!city || !country) {
+    $("prayerStatus").textContent = "Please enter a city and country.";
+    return;
+  }
+
+  $("prayerStatus").textContent = "Fetching prayer times...";
+  $("prayerGrid").innerHTML = `<div class="loading h-28 rounded-2xl bg-[#eae8e1] col-span-full"></div>`;
+
+  try {
+    const date = getTodayDate();
+    const url = `${PRAYER_API}/timingsByCity/${date}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=3`;
+    const result = await fetchJSON(url);
+    const data = result.data;
+    const timings = data.timings;
+
+    $("prayerDate").textContent = `${data.date.readable} · ${data.date.hijri.day} ${data.date.hijri.month.en} ${data.date.hijri.year} AH`;
+    $("prayerStatus").textContent = `Prayer times for ${city}, ${country}`;
+
+    $("prayerGrid").innerHTML = prayerNames.map((name, i) => `
+      <div class="rounded-2xl border ${name === "Fajr" ? "border-[#b8c9ba] bg-[#edf2ed]" : "border-[#e8e6df] bg-white"} p-4 sm:p-5">
+        <div class="text-xs text-gray-500">${name}</div>
+        <div class="text-xl sm:text-2xl font-semibold mt-2 text-[#234b3c]">${escapeHTML(timings[name] || "--:--").split(" ")[0]}</div>
+        <div class="text-xs text-gray-400 mt-1">${name === "Sunrise" ? "Sunrise" : "Prayer"}</div>
+      </div>
+    `).join("");
+  } catch (error) {
+    $("prayerStatus").textContent = "Could not load prayer times. Check your city and country.";
+    $("prayerGrid").innerHTML = "";
+    console.error(error);
+  }
+}
+
+// Events
+$("viewMode").addEventListener("change", async event => {
+  currentMode = event.target.value;
+  $("surahControl").classList.toggle("hidden", currentMode !== "surah");
+  $("juzControl").classList.toggle("hidden", currentMode !== "juz");
+  await loadCurrentSelection();
+});
+
+$("surahSelect").addEventListener("change", async event => {
+  currentSurah = Number(event.target.value);
+  await loadCurrentSelection();
+});
+
+$("juzSelect").addEventListener("change", async event => {
+  currentJuz = Number(event.target.value);
+  await loadCurrentSelection();
+});
+
+$("searchBtn").addEventListener("click", applySearch);
+$("searchInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") applySearch();
+});
+$("clearSearchBtn").addEventListener("click", () => {
+  $("searchInput").value = "";
+  applySearch();
+});
+$("jumpBtn").addEventListener("click", jumpToAyah);
+$("ayahJump").addEventListener("keydown", event => {
+  if (event.key === "Enter") jumpToAyah();
+});
+
+$("prevBtn").addEventListener("click", () => {
+  if (currentPage > 0) {
+    currentPage--;
+    renderAyahs();
+    $("reader").scrollIntoView({ behavior: "smooth" });
+  }
+});
+
+$("nextBtn").addEventListener("click", () => {
+  if ((currentPage + 1) * PAGE_SIZE < filteredAyahs.length) {
+    currentPage++;
+    renderAyahs();
+    $("reader").scrollIntoView({ behavior: "smooth" });
+  }
+});
+
+$("locationBtn").addEventListener("click", loadPrayerTimes);
+$("mobileMenuBtn").addEventListener("click", () => $("mobileMenu").classList.toggle("hidden"));
+$("mobileMenu").querySelectorAll("a").forEach(link =>
+  link.addEventListener("click", () => $("mobileMenu").classList.add("hidden"))
+);
+
+// Start app
+loadSurahs();
+loadPrayerTimes();
+
+function updateClock() {
+  const now = new Date();
+  
+  // Get hours, minutes, and seconds padded with leading zeros
+  const hrs = String(now.getHours()).padStart(2, '0');
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  const secs = String(now.getSeconds()).padStart(2, '0');
+
+  // Wrap every single digit in a <span class="digit">
+  const clockElement = document.querySelector('.nav-clock');
+  clockElement.innerHTML = `
+    <span class="digit">${hrs[0]}</span><span class="digit">${hrs[1]}</span>:
+    <span class="digit">${mins[0]}</span><span class="digit">${mins[1]}</span>:
+    <span class="digit">${secs[0]}</span><span class="digit">${secs[1]}</span>
+  `;
+}
+
+// Run the clock
+setInterval(updateClock, 1000);
+updateClock();
+
+</script>
+</body>
+</html>
